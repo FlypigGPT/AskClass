@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>课堂抽问系统</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div id="app" class="container">
+        <header>
+            <h1>🎓 课堂抽问系统</h1>
+            <p class="subtitle">Classroom Q&A System</p>
+        </header>
+
+        <main>
+            <!-- 抽问区域 -->
+            <section class="random-section">
+                <h2>随机抽问</h2>
+                <div class="random-card">
+                    <div class="student-display">
+                        <div v-if="!selectedStudent" class="student-name">点击下方按钮开始抽问</div>
+                        <template v-else>
+                            <div class="student-name">{{ selectedStudent.name }}</div>
+                            <div class="student-info">
+                                学号: {{ selectedStudent.student_id }} | 班级: {{ selectedStudent.class_name || '未设置' }}
+                            </div>
+                        </template>
+                    </div>
+                    <button @click="randomSelectStudent" :disabled="isRandoming" class="btn btn-primary btn-large">
+                        {{ isRandoming ? '抽取中...' : '🎲 随机抽取学生' }}
+                    </button>
+                    <div v-if="selectedStudent" class="record-area">
+                        <input v-model="questionInput" type="text" placeholder="输入提问的问题（可选）" class="input-field">
+                        <select v-model="qualitySelect" class="select-field">
+                            <option value="">回答质量（可选）</option>
+                            <option value="5">优秀 ⭐⭐⭐⭐⭐</option>
+                            <option value="4">良好 ⭐⭐⭐⭐</option>
+                            <option value="3">中等 ⭐⭐⭐</option>
+                            <option value="2">一般 ⭐⭐</option>
+                            <option value="1">较差 ⭐</option>
+                        </select>
+                        <button @click="saveRecord" class="btn btn-success">💾 保存记录</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 学生管理 -->
+            <section class="students-section">
+                <div class="section-header">
+                    <h2>学生管理</h2>
+                    <button @click="showAddForm = !showAddForm" class="btn btn-secondary">
+                        {{ showAddForm ? '❌ 取消' : '➕ 添加学生' }}
+                    </button>
+                </div>
+                
+                <!-- 添加学生表单 -->
+                <div v-if="showAddForm" class="form-card">
+                    <h3>添加新学生</h3>
+                    <input v-model="newStudent.name" type="text" placeholder="姓名" class="input-field" required>
+                    <input v-model="newStudent.student_id" type="text" placeholder="学号" class="input-field" required>
+                    <input v-model="newStudent.class_name" type="text" placeholder="班级" class="input-field">
+                    <div class="form-actions">
+                        <button @click="addStudent" class="btn btn-success">✅ 确认添加</button>
+                        <button @click="cancelAdd" class="btn btn-danger">❌ 取消</button>
+                    </div>
+                </div>
+
+                <!-- 学生列表 -->
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>姓名</th>
+                                <th>学号</th>
+                                <th>班级</th>
+                                <th>添加时间</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-if="students.length === 0">
+                                <td colspan="5" class="empty-state">暂无学生数据</td>
+                            </tr>
+                            <tr v-for="student in students" :key="student.id">
+                                <td>{{ student.name }}</td>
+                                <td>{{ student.student_id }}</td>
+                                <td>{{ student.class_name || '-' }}</td>
+                                <td>{{ formatDateTime(student.created_at) }}</td>
+                                <td>
+                                    <button @click="deleteStudent(student.id)" class="btn btn-danger btn-small">
+                                        🗑️ 删除
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- 抽问历史 -->
+            <section class="history-section">
+                <div class="section-header">
+                    <h2>抽问历史</h2>
+                    <button @click="loadHistory" class="btn btn-secondary">🔄 刷新</button>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>学生姓名</th>
+                                <th>学号</th>
+                                <th>问题</th>
+                                <th>回答质量</th>
+                                <th>时间</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-if="history.length === 0">
+                                <td colspan="6" class="empty-state">暂无抽问记录</td>
+                            </tr>
+                            <tr v-for="record in history" :key="record.id">
+                                <td>{{ record.name }}</td>
+                                <td>{{ record.student_id }}</td>
+                                <td>{{ record.question || '-' }}</td>
+                                <td v-html="formatQuality(record.answer_quality)"></td>
+                                <td>{{ formatDateTime(record.created_at) }}</td>
+                                <td>
+                                    <button @click="deleteHistory(record.id)" class="btn btn-danger btn-small">
+                                        🗑️ 删除
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>© 2025 课堂抽问系统 | Made with ❤️ & Vue.js</p>
+        </footer>
+    </div>
+
+    <!-- 引入 Vue 3 -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
